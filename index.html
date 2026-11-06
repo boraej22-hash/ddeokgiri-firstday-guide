@@ -53,6 +53,7 @@
   .btn:hover{background:#f4f7fb}
   .btn-del{min-width:56px;color:var(--muted)}
   .btn-add{color:var(--blue);border-style:dashed;border-color:#a9c0ec;background:var(--blue-soft)}
+  .btn-reset{margin-top:10px;font-size:14px;color:var(--muted)}
   .btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
   .btn-primary:hover{background:var(--blue-dark)}
   .btn[disabled]{opacity:.45;cursor:not-allowed}
@@ -123,6 +124,7 @@
     <div class="name-block">
       <label class="field-label" for="name">직원 이름</label>
       <input id="name" class="text-input" type="text" maxlength="60" placeholder="직원 이름을 입력해 주세요" autocomplete="off">
+      <button type="button" class="btn btn-reset" id="resetDefault">떡기리 기본 안내 다시 넣기</button>
     </div>
     <div id="cats"></div>
   </section>
@@ -366,6 +368,12 @@
     var d;
     try { d = JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch(e){ return; }
     if (!d || typeof d !== 'object') return;
+    /* 내용이 하나도 없는 빈 초안이면 떡기리 기본 안내를 그대로 보여 준다 */
+    var hasText = (isStr(d.name) && !blank(d.name)) || (isStr(d.place) && !blank(d.place)) ||
+      (Array.isArray(d.groups) && d.groups.some(function(g){
+        return Array.isArray(g) && g.some(function(t){ return isStr(t) && !blank(t); });
+      }));
+    if (!hasText) return;
     if (isStr(d.name)) state.name = d.name.slice(0, LIM.name);
     if (Array.isArray(d.groups) && d.groups.length === CATS.length){
       state.groups = d.groups.map(function(g){
@@ -548,6 +556,13 @@
     renderEditor();
     renderDoc(buildModel(state));
     $('makeLink').addEventListener('click', makeLink);
+    $('resetDefault').addEventListener('click', function(){
+      if (!window.confirm('지금 적힌 내용을 지우고 떡기리 기본 안내로 바꿀까요?')) return;
+      state = JSON.parse(JSON.stringify(DEFAULT_GUIDE));
+      state.name = nameIn.value;
+      renderEditor();
+      changed();
+    });
     $('copyBtn').addEventListener('click', function(){
       var url = $('linkOut').value, m = $('copyMsg');
       if (!navigator.clipboard || !window.isSecureContext){ copyFallback(); return; }
